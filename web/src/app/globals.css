@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --color-page: #0a0a0b;
+  --color-surface: #101114;
+  --color-surface-raised: #16171b;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Ink */
+  --color-ink: #f5f4f0;
+  --color-ink-secondary: #a3a19a;
+  --color-ink-muted: #6b6963;
+
+  /* Brand accent — signal amber, chrome only, never a data-encoding hue */
+  --color-accent: #e8a33d;
+  --color-accent-ink: #1a1206;
+  --color-accent-dim: rgba(232, 163, 61, 0.14);
+
+  /* Sequential ramp (magnitude) — dark-surface calibrated, monotonic lightness */
+  --color-seq-0: #14181f;
+  --color-seq-1: #1a2c47;
+  --color-seq-2: #204373;
+  --color-seq-3: #235ca0;
+  --color-seq-4: #2a78d6;
+  --color-seq-5: #3987e5;
+  --color-seq-6: #6ba7ee;
+
+  /* Status — fixed, never themed */
+  --color-good: #0ca30c;
+  --color-warning: #fab219;
+  --color-serious: #ec835a;
+  --color-critical: #e0524f;
+
+  --font-display: var(--font-space-grotesk), "Segoe UI", sans-serif;
+  --font-sans: var(--font-inter), "Segoe UI", sans-serif;
+  --font-mono: var(--font-mono-ibm), "SFMono-Regular", Consolas, monospace;
+}
+
+@theme inline {
+  --color-page: var(--color-page);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-ink: var(--color-ink);
+  --color-ink-secondary: var(--color-ink-secondary);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-accent: var(--color-accent);
+  --color-accent-ink: var(--color-accent-ink);
+  --color-good: var(--color-good);
+  --color-warning: var(--color-warning);
+  --color-serious: var(--color-serious);
+  --color-critical: var(--color-critical);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+/* Hairline grid backdrop used behind the hero — subtle technical texture */
+.grid-backdrop {
+  background-image:
+    linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fade-in 0.5s ease-out both;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
