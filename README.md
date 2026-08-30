@@ -62,15 +62,40 @@ Run from inside `web/`:
 ## Configuration
 
 The frontend talks to the Sentinel.io Analytics API over HTTP and needs its
-base URL. Create/edit `web/.env.local`:
+base URL, via a single env var read in
+[`web/src/lib/api/client.ts`](web/src/lib/api/client.ts):
+`NEXT_PUBLIC_API_BASE_URL`. A template lives at `web/.env.example`.
+
+**Local development** — `web/.env.local` (git-ignored):
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-If unset, it falls back to `http://localhost:8000/api/v1` (see
-[`web/src/lib/api/client.ts`](web/src/lib/api/client.ts)). Point it at
-whichever environment (local, staging, production) is serving the API.
+If unset, it falls back to that same `http://localhost:8000/api/v1`.
+
+**Production** — the public Sentinel.io Analytics API is deployed on Render:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://sentinel-api-sjie.onrender.com/api/v1
+```
+
+Set this in the hosting platform's environment variables (e.g. Vercel
+project settings) **before** the build runs — `NEXT_PUBLIC_*` vars are
+inlined into the client bundle at build time, so changing it after the app
+is already built/deployed has no effect. The value must always include the
+`/api/v1` prefix; every request path (`/indicators`, `/kpis`, etc.) is
+appended directly to it.
+
+### CORS
+
+The Render API allows `http://localhost:3000` and
+`https://sentinel-io.vercel.app` as CORS origins (verified). If the Vercel
+deployment's final domain differs — including Vercel's per-branch preview
+domains — requests from it will be blocked by CORS until that origin is
+added to `CORS_ORIGINS` on the API side (Render). This is a backend
+configuration change, not something to work around in the frontend (no
+wildcard `*` origin).
 
 ## Application structure (`web/src`)
 
