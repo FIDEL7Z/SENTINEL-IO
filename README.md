@@ -1,43 +1,113 @@
-# SENTINEL-IO
+# Sentinel.io
 
-**Public Safety Analytics Platform** — an observatory for Brazilian public
-security data. Sentinel.io turns official [Sinesp VDE](https://www.gov.br/mj/pt-br/assuntos/sua-seguranca/seguranca-publica/sinesp-1)
-(Sistema Nacional de Informações de Segurança Pública) statistics into an
-explorable dashboard: national KPIs, year-over-year comparisons, monthly time
-series, and state/municipality rankings, broken down by indicator, UF
-(state), municipality, coverage type (`abrangencia`) and year.
+Observatório público de dados de segurança pública do Brasil.
 
-This repository currently contains the **frontend web application** (`web/`).
-It is a Next.js client that consumes a separate Sentinel.io Analytics REST
-API (OpenAPI v1.0.0) — the API itself is not part of this repo and must be
-running/available separately (see [Configuration](#configuration)).
+## Overview
 
-## Repository layout
+Sentinel.io transforma os indicadores oficiais de segurança pública do
+Brasil em um dashboard visual e interativo: KPIs nacionais, comparação
+ano a ano, série temporal mensal, mapa coroplético por estado e rankings —
+tudo em uma única página, sem necessidade de conta ou download de
+planilha.
 
+Este repositório contém o **frontend** do produto (`web/`), construído em
+Next.js. Ele é um cliente puro de uma API REST pública e somente leitura —
+a **Sentinel.io Analytics API** — mantida pela plataforma ATLAS e
+publicada separadamente. Nenhum dado é processado, armazenado ou
+recalculado neste repositório.
+
+## The Problem
+
+O Brasil publica dados de segurança pública através do Sinesp VDE (Sistema
+Nacional de Informações de Segurança Pública), mantido pelo Ministério da
+Justiça e Segurança Pública. São dados reais e oficiais — mas chegam ao
+público em formato bruto: tabelas extensas, sem visualização, sem
+comparação histórica pronta, sem mapa, sem contexto sobre o que significa
+um "ano parcial". Dados que já são públicos, na prática, ficam
+inacessíveis para quem não tem tempo ou ferramenta para tratá-los.
+
+## The Solution
+
+O Sentinel.io consome essa informação já validada via API e apresenta os
+principais indicadores de forma visual: cards de KPI com variação
+ano-a-ano, mapa por estado, ranking, série mensal com destaque para
+períodos parciais. Zero fricção — abre no navegador e os dados já estão
+lá.
+
+## Features
+
+- **KPIs nacionais** com variação percentual YoY e tendência colorida por
+  favorável/desfavorável (respeitando a polaridade de cada indicador).
+- **Comparação Year-over-Year** com recorte automático de meses
+  equivalentes quando o ano corrente está incompleto.
+- **Mapa coroplético** dos 27 estados, com escala sequencial por
+  quantis, hover e seleção sincronizados com o ranking.
+- **Ranking nacional** por UF, top 10, com barra de proporção.
+- **Série temporal mensal**, com trecho de "ano parcial" destacado
+  visualmente.
+- **Seletor de indicador com busca**, agrupado por categoria semântica,
+  sobre os 31 indicadores oficiais disponíveis.
+- **Composto derivado**: soma client-side de apreensão de cocaína +
+  maconha (mesma unidade), o único dado calculado no frontend.
+
+Inventário completo — incluindo o que a API oferece mas ainda não tem
+tela dedicada — em [docs/05-FEATURES.md](docs/05-FEATURES.md).
+
+## Architecture
+
+```mermaid
+flowchart LR
+    ATLAS["ATLAS\n(fora deste repositório)"] --> API["Sentinel.io Analytics API\nFastAPI · Render"]
+    API -- "REST JSON, client-side fetch (SWR)" --> Front["Sentinel.io Frontend\nNext.js · Vercel"]
+    Front --> User["Usuário final"]
 ```
-SENTINEL-IO/
-├── README.md      # this file
-└── web/           # Next.js frontend application
-```
 
-## Tech stack (`web/`)
+Toda busca de dado acontece **no navegador** via SWR — não há data
+fetching server-side no Next.js. A comunicação com a API é HTTP puro,
+sujeita a CORS (ver [docs/11-CORS.md](docs/11-CORS.md)). Arquitetura
+completa, com diagramas de sequência e fluxo de deploy, em
+[docs/02-PRODUCT_ARCHITECTURE.md](docs/02-PRODUCT_ARCHITECTURE.md).
 
-| Layer            | Choice                                              |
-|-------------------|------------------------------------------------------|
-| Framework          | [Next.js 16](https://nextjs.org/) (App Router)       |
-| UI library         | React 19                                            |
-| Language           | TypeScript 5                                        |
-| Styling            | Tailwind CSS 4                                      |
-| Data fetching/cache | [SWR](https://swr.vercel.app/)                     |
-| Client state        | [Zustand](https://github.com/pmndrs/zustand)        |
-| Charts              | [Recharts](https://recharts.org/)                   |
-| Geo/map projection  | [d3-geo](https://github.com/d3/d3-geo)              |
-| Fonts               | Space Grotesk, Inter, IBM Plex Mono (`next/font`)   |
-| Lint                | ESLint 9 (`eslint-config-next`)                     |
+## Data Source
 
-## Getting started
+Todos os dados vêm do **Sinesp VDE** (Ministério da Justiça e Segurança
+Pública), servidos por uma API somente leitura mantida pela plataforma
+ATLAS. Cobertura confirmada em produção (30/08/2026): **31 indicadores**,
+**27 UFs**, **5.298 municípios**, período de **janeiro/2024 a junho/2026**
+(último ano marcado como parcial). Limitações e como interpretar
+corretamente os números em
+[docs/07-DATA_INTERPRETATION.md](docs/07-DATA_INTERPRETATION.md).
 
-Prerequisites: Node.js 18.18+ (matching the Next.js 16 requirement) and npm.
+## Technology Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| UI | React 19 |
+| Linguagem | TypeScript 5 |
+| Estilo | Tailwind CSS 4 |
+| Data fetching/cache | SWR |
+| Estado global de cliente | Zustand |
+| Gráficos | Recharts |
+| Mapa | d3-geo (projeção Mercator sobre GeoJSON próprio) |
+| Fontes | Space Grotesk, Inter, IBM Plex Mono (`next/font`) |
+
+Detalhes de estrutura de pastas, árvore de componentes e design system em
+[docs/03-FRONTEND_ARCHITECTURE.md](docs/03-FRONTEND_ARCHITECTURE.md) e
+[docs/08-DESIGN_SYSTEM.md](docs/08-DESIGN_SYSTEM.md).
+
+## API Integration
+
+A camada de API (`web/src/lib/api/`) cobre os 16 endpoints da Sentinel.io
+Analytics API — indicadores, KPIs, temporal, geografia, rankings, radar e
+metadata — através de um cliente HTTP tipado (`apiGet<T>`) e um hook SWR
+por consulta (`web/src/hooks/useApi.ts`). Todos os tipos em
+`web/src/types/api.ts` foram validados contra o `openapi.json` real da
+API em produção. Tabela completa de endpoint, parâmetros, componente
+consumidor e exemplo real de resposta em
+[docs/04-API_INTEGRATION.md](docs/04-API_INTEGRATION.md).
+
+## Development
 
 ```bash
 cd web
@@ -45,179 +115,107 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the app. The dev
-server (Turbopack) hot-reloads on file changes.
+Abre em [http://localhost:3000](http://localhost:3000). Guia completo,
+incluindo como rodar contra a API de produção localmente, em
+[docs/12-DEVELOPMENT.md](docs/12-DEVELOPMENT.md).
 
 ### Scripts
 
-Run from inside `web/`:
+| Script | Descrição |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (Turbopack) |
+| `npm run build` | Build de produção |
+| `npm run start` | Serve o build de produção |
+| `npm run lint` | ESLint |
 
-| Script          | Description                                   |
-|------------------|------------------------------------------------|
-| `npm run dev`     | Start the Next.js dev server (Turbopack)       |
-| `npm run build`   | Production build                               |
-| `npm run start`   | Serve the production build                     |
-| `npm run lint`    | Run ESLint                                     |
+## Environment Variables
 
-## Configuration
-
-The frontend talks to the Sentinel.io Analytics API over HTTP and needs its
-base URL, via a single env var read in
-[`web/src/lib/api/client.ts`](web/src/lib/api/client.ts):
-`NEXT_PUBLIC_API_BASE_URL`. A template lives at `web/.env.example`.
-
-**Local development** — `web/.env.local` (git-ignored):
+Uma única variável, lida em `web/src/lib/api/client.ts`:
 
 ```bash
+# Local (padrão de fallback do código)
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
-```
 
-If unset, it falls back to that same `http://localhost:8000/api/v1`.
-
-**Production** — the public Sentinel.io Analytics API is deployed on Render:
-
-```bash
+# Produção
 NEXT_PUBLIC_API_BASE_URL=https://sentinel-api-sjie.onrender.com/api/v1
 ```
 
-Set this in the hosting platform's environment variables (e.g. Vercel
-project settings) **before** the build runs — `NEXT_PUBLIC_*` vars are
-inlined into the client bundle at build time, so changing it after the app
-is already built/deployed has no effect. The value must always include the
-`/api/v1` prefix; every request path (`/indicators`, `/kpis`, etc.) is
-appended directly to it.
-
-### CORS
-
-The Render API allows `http://localhost:3000` and
-`https://sentinel-io.vercel.app` as CORS origins (verified). If the Vercel
-deployment's final domain differs — including Vercel's per-branch preview
-domains — requests from it will be blocked by CORS until that origin is
-added to `CORS_ORIGINS` on the API side (Render). This is a backend
-configuration change, not something to work around in the frontend (no
-wildcard `*` origin).
-
-## Application structure (`web/src`)
-
-```
-src/
-├── app/                    # Next.js App Router entry points
-│   ├── layout.tsx          # Root layout: fonts, <html>/<body>, metadata
-│   ├── page.tsx            # Home page — composes all home sections
-│   └── globals.css         # Tailwind base + design tokens
-├── components/
-│   ├── home/                # Sections that make up the home page (see below)
-│   ├── layout/               # Header, Footer
-│   ├── maps/                 # BrazilMap (choropleth, d3-geo projection)
-│   ├── rankings/              # RankingList (UF/municipality/indicator rankings)
-│   ├── filters/                # IndicatorSelect and other filter controls
-│   └── ui/                     # Generic building blocks: Container,
-│                                # SectionHeading, SegmentedControl, Sparkline,
-│                                # TrendBadge
-├── hooks/
-│   └── useApi.ts            # SWR hooks wrapping every API call (caching,
-│                             # revalidation policy, conditional fetching)
-├── lib/
-│   ├── api/                  # One file per API resource + typed fetch client
-│   ├── constants/indicators.ts  # Indicator polarity rules, headline
-│   │                             # indicator set, drug-seizure composite
-│   ├── geo/                    # Brazil states GeoJSON + projection helpers
-│   └── utils/                  # Formatting (numbers/dates) and color-scale
-│                                # helpers
-├── store/
-│   └── filters.ts            # Zustand store: selected indicator/year/UF/
-│                              # abrangencia, shared across the dashboard
-└── types/
-    └── api.ts                # TypeScript types mirroring the API's OpenAPI
-                               # schema — source of truth is GET /openapi.json
-                               # on the API itself
-```
-
-### Home page sections
-
-`app/page.tsx` renders the home page as a stack of independent sections
-(each in `components/home/`):
-
-1. **Hero** — landing headline/intro.
-2. **IndicatorStrip** ("Panorama Nacional") — headline KPI cards for the
-   national picture.
-3. **BrasilEmNumeros** ("O Brasil em números") — key national numbers for
-   the latest available year.
-4. **ExploreSection** ("Distribuição Geográfica") — choropleth map
-   (`BrazilMap`) of indicator values by UF.
-5. **WhatChangedSection** ("Comparação Anual") — year-over-year (YoY)
-   variation for the selected indicator.
-6. **TemporalSection** ("Série Mensal") — monthly time series chart with
-   partial-year handling.
-7. **ClosingCta** — closing call-to-action.
-
-`IndicatorHeadlineCard` and `DrugCompositeCard` are card variants used
-within these sections; the latter sums the "Apreensão de Cocaína" and
-"Apreensão de Maconha" indicators (same unit, `kg`) into a single
-client-side composite, since the API never returns that total itself.
-
-## Data model & API integration
-
-All API access is centralized in `src/lib/api/` (one module per resource:
-`indicators`, `kpis`, `temporal`, `geography`, `rankings`, `radar`,
-`metadata`), built on a small typed fetch wrapper in `client.ts`
-(`apiGet<T>`) that:
-
-- Prefixes every request with `NEXT_PUBLIC_API_BASE_URL`.
-- Serializes query params, skipping `null`/`undefined`/empty values.
-- Throws a typed `ApiError` (status + optional API error `code`) on non-2xx
-  responses, parsing the API's documented `{ error: { code, message } }`
-  shape when present.
-
-`src/hooks/useApi.ts` wraps each of these calls in an SWR hook
-(`useKpis`, `useTemporal`, `useYoY`, `useUFTotals`, `useUFRanking`,
-`useMunicipalityRanking`, `useIndicatorRanking`, `useRadar`,
-`useIndicators`, `useUFOptions`, `useYears`, `useMetadata`), with shared
-revalidation settings (`revalidateOnFocus: false`, 60s deduping) and
-conditional fetching (pass `null` to skip a request until its query is
-ready).
-
-### Endpoints consumed
-
-| Resource   | Endpoint(s)                                                     |
-|------------|-------------------------------------------------------------------|
-| Indicators | `GET /indicators`, `GET /indicators/{id}`                        |
-| KPIs       | `GET /kpis`                                                      |
-| Temporal   | `GET /temporal`, `GET /temporal/yoy`                              |
-| Geography  | `GET /geography/uf`, `GET /geography/municipalities`              |
-| Rankings   | `GET /rankings/uf`, `GET /rankings/municipalities`, `GET /rankings/indicators` |
-| Radar      | `GET /radar` (statistical anomaly detection: z-score vs. historical mean) |
-| Metadata   | `GET /metadata`, `GET /metadata/ufs`, `GET /metadata/years`, `GET /metadata/abrangencias`, `GET /metadata/municipalities` |
-
-### Domain concepts
-
-- **Indicator (`evento`)** — a measured event (e.g. "Homicídio doloso"),
-  belonging to a `familia_medida` (`vitima` | `contagem` | `peso`) and a
-  `grupo_semantico` (Vítimas, Ações Policiais, Ocorrências, Apreensões
-  (Peso), Apreensões (Unidade), Serviços). Values across different
-  `familia_medida` are never summed.
-- **Polarity** (`lib/constants/indicators.ts`) — whether a rising value for
-  an indicator is favorable, unfavorable, or neutral, derived from its
-  semantic group with per-indicator overrides (e.g. "Pessoa Localizada" is
-  `up-is-favorable`).
-- **Abrangência** — the coverage/scope dimension of a record (filterable
-  alongside UF, municipality, and year).
-- **Filters store** (`store/filters.ts`) — a single Zustand store holding
-  the currently selected `indicatorId`, `year`, `uf`, and `abrangencia`,
-  shared by every section on the dashboard.
-
-## Environment files
-
-`web/.env.local` is git-ignored and holds local configuration
-(`NEXT_PUBLIC_API_BASE_URL`). Set the equivalent environment variable in
-your deployment platform (e.g. Vercel project settings) for other
-environments.
+O valor **deve incluir o sufixo `/api/v1`**. Como é uma variável
+`NEXT_PUBLIC_*`, o Next.js a embute no bundle JavaScript durante o
+build — defini-la depois do deploy não tem efeito; é preciso rebuildar.
+Template em `web/.env.example`. Detalhes completos em
+[docs/09-ENVIRONMENT.md](docs/09-ENVIRONMENT.md).
 
 ## Deployment
 
-Any Node.js host that can run `next build && next start` works. The
-simplest option is [Vercel](https://vercel.com/new), the creators of
-Next.js — see the
-[Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying)
-for details. Remember to set `NEXT_PUBLIC_API_BASE_URL` for the target
-environment before building.
+Hospedado na Vercel. O deploy de produção atual
+(`https://sentinel-io-delta.vercel.app`) já está conectado à API real do
+Render — confirmado inspecionando o bundle publicado. A API permite CORS
+para `localhost:3000`, `sentinel-io.vercel.app` e
+`sentinel-io-delta.vercel.app` — qualquer outro domínio (incluindo
+preview deployments da Vercel) precisa ser adicionado à allowlist do lado
+da API antes de funcionar. Detalhes em
+[docs/10-DEPLOYMENT.md](docs/10-DEPLOYMENT.md) e
+[docs/11-CORS.md](docs/11-CORS.md).
+
+## Documentation
+
+Documentação completa e detalhada em [`docs/`](docs/README.md):
+
+| | |
+|---|---|
+| [01 — Visão do Produto](docs/01-PRODUCT_OVERVIEW.md) | [02 — Arquitetura](docs/02-PRODUCT_ARCHITECTURE.md) |
+| [03 — Arquitetura do Frontend](docs/03-FRONTEND_ARCHITECTURE.md) | [04 — Integração com a API](docs/04-API_INTEGRATION.md) |
+| [05 — Funcionalidades](docs/05-FEATURES.md) | [06 — Guia do Usuário](docs/06-USER_GUIDE.md) |
+| [07 — Interpretação dos Dados](docs/07-DATA_INTERPRETATION.md) | [08 — Design System](docs/08-DESIGN_SYSTEM.md) |
+| [09 — Variáveis de Ambiente](docs/09-ENVIRONMENT.md) | [10 — Deploy](docs/10-DEPLOYMENT.md) |
+| [11 — CORS](docs/11-CORS.md) | [12 — Desenvolvimento Local](docs/12-DEVELOPMENT.md) |
+| [13 — Troubleshooting](docs/13-TROUBLESHOOTING.md) | |
+
+## Roadmap
+
+Sugestões, não compromissos — nada aqui está implementado além do que já
+está marcado `[ATUAL]`.
+
+- `[ATUAL]` KPIs, YoY, série temporal, mapa por UF, ranking de UF,
+  seletor de indicador.
+- `[PLANEJADO]` Conectar o filtro global de UF/abrangência já declarado
+  em `store/filters.ts` (`uf`, `abrangencia`) a uma UI real — hoje a
+  seleção de UF é estado local, não integrada ao store.
+- `[PLANEJADO]` Telas para os endpoints já suportados pela camada de API
+  mas sem interface: ranking de municípios, ranking por indicador,
+  detalhe de indicador, totais por município.
+- `[PLANEJADO]` Estados de erro visíveis (hoje uma falha de API resulta
+  em carregamento infinito, sem mensagem — ver
+  [docs/05-FEATURES.md](docs/05-FEATURES.md#estados-de-erro)).
+- `[FUTURO]` Painel/visualização para o endpoint de Radar (detecção de
+  anomalias por z-score), já integrado na camada de dados mas sem tela.
+- `[FUTURO]` Exportação de dados, cache mais agressivo, observabilidade
+  de erros no cliente (ex.: Sentry), tema claro.
+
+## Engineering Highlights
+
+- **Integração frontend/backend desacoplada**: o Sentinel.io não conhece
+  nada sobre como os dados são calculados — consome uma API REST versionada
+  e documentada via OpenAPI, com tipos TypeScript mantidos em paridade
+  manual e validados contra o schema real.
+- **16 endpoints, 1 cliente HTTP tipado**: `apiGet<T>()` centraliza
+  montagem de URL, serialização de query params e tratamento de erro
+  (`ApiError` tipado a partir do formato de erro documentado pela API).
+- **Data fetching client-side com SWR**: cache, deduplicação (60s) e
+  fetching condicional (`useSWR(query ? [...] : null, ...)`) para evitar
+  requests com parâmetros incompletos — sem estado de loading manual
+  espalhado pelo código.
+- **Estado global mínimo**: um único store Zustand compartilha a seleção
+  de filtro entre componentes distantes na árvore, sem prop drilling.
+- **Visualização de dados sem dependência pesada**: mapa coroplético em
+  SVG puro com `d3-geo`, sparklines em SVG feitos à mão — só o gráfico de
+  área principal usa uma biblioteca de charting (Recharts).
+- **Deploy cloud completo**: Vercel (frontend) + Render (API), com
+  configuração de CORS explícita entre os dois e variáveis
+  `NEXT_PUBLIC_*` corretamente tratadas como valores de build-time, não
+  runtime.
+- **Auditoria própria documentada**: toda a documentação em [`docs/`](docs/README.md)
+  foi validada contra código-fonte e chamadas reais à API de produção —
+  inclusive suas lacunas (endpoints sem UI, ausência de tratamento de
+  erro, estado não conectado), listadas sem maquiagem.
